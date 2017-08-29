@@ -44,7 +44,7 @@ Package/shadowsocks-libev-server = $(Package/shadowsocks-libev/Default)
 # gfwlist packages
 define Package/shadowsocks-libev-gfwlist
   $(call Package/shadowsocks-libev/Default)
-  DEPENDS:=+dnsmasq-full +ipset +dns-forwarder
+  DEPENDS:=+zlib +libev +libudns +libpcre +libpthread +libsodium +libmbedtls +dnsmasq-full +ipset +dns-forwarder
 endef
 
 define Package/shadowsocks-libev/description
