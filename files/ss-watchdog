@@ -21,7 +21,7 @@ while true; do
 		if [ "$?" == "0" ]; then
 			echo "[$LOGTIME] Problem decteted, restart Shadowsocks."
 			/etc/init.d/dns-forwarder restart
-			/etc/init.d/shadowsocksr restart
+			/etc/init.d/shadowsocks restart
 		else
 			echo "[$LOGTIME] Network problem. Do nothing."
 		fi
