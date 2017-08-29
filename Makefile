@@ -41,11 +41,31 @@ endef
 Package/shadowsocks-libev = $(Package/shadowsocks-libev/Default)
 Package/shadowsocks-libev-server = $(Package/shadowsocks-libev/Default)
 
+# gfwlist packages
+define Package/shadowsocks-libev-gfwlist
+  $(call Package/shadowsocks-libev/Default)
+  DEPENDS:=+dnsmasq-full +ipset +dns-forwarder
+endef
+
 define Package/shadowsocks-libev/description
 Shadowsocks-libev is a lightweight secured socks5 proxy for embedded devices and low end boxes.
 endef
 
 Package/shadowsocks-libev-server/description = $(Package/shadowsocks-libev/description)
+
+# gfwlist packages
+Package/shadowsocks-libev-gfwlist/description = $(Package/shadowsocks-libev/description)
+
+define Package/shadowsocks-libev-gfwlist/postinst
+#!/bin/sh
+if [ -z "$${IPKG_INSTROOT}" ]; then
+	/etc/init.d/firewall restart
+	/etc/init.d/shadowsocks restart
+	/etc/init.d/dns-forwarder restart
+	/etc/init.d/dnsmasq restart
+fi
+exit 0
+endef
 
 CONFIGURE_ARGS += --disable-ssp --disable-documentation --disable-assert
 
@@ -59,5 +79,42 @@ define Package/shadowsocks-libev-server/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-server $(1)/usr/bin
 endef
 
+# gfwlist packages
+define Package/shadowsocks-libev-gfwlist/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ss-{local,redir} $(1)/usr/bin
+	
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/shadowsocks-gfwlist $(1)/etc/init.d/shadowsocks
+	$(INSTALL_CONF) ./files/shadowsocks-gfwlist.json $(1)/etc/shadowsocks.json
+	$(INSTALL_BIN) ./files/ss-watchdog $(1)/usr/bin/ss-watchdog
+	
+	#patch dnsmasq, add ipset gfwlist 
+	$(INSTALL_CONF) ./files/dnsmasq.conf $(1)/etc/dnsmasq.conf
+	$(INSTALL_DIR) $(1)/etc/dnsmasq.d
+	$(INSTALL_CONF) ./files/gfw_list.conf $(1)/etc/dnsmasq.d/gfw_list.conf
+	$(INSTALL_CONF) ./files/custom_list.conf $(1)/etc/dnsmasq.d/custom_list.conf
+	
+	#patch firewall rule, create ipset gfwlist & redirect traffic
+	$(INSTALL_CONF) ./files/firewall.user $(1)/etc/firewall.user
+	
+	#patch dns-forwarder
+	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_CONF) ./files/dns-forwarder.config $(1)/etc/config/dns-forwarder
+	
+	#install luci for ssr
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller
+	$(INSTALL_CONF) ./files/shadowsocks-libev.lua $(1)/usr/lib/lua/luci/controller/shadowsocks-libev.lua
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi/shadowsocks-libev
+	$(INSTALL_CONF) ./files/shadowsocks-libev-general.lua $(1)/usr/lib/lua/luci/model/cbi/shadowsocks-libev/shadowsocks-libev-general.lua
+	$(INSTALL_CONF) ./files/shadowsocks-libev-custom.lua $(1)/usr/lib/lua/luci/model/cbi/shadowsocks-libev/shadowsocks-libev-custom.lua
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/view/shadowsocks-libev
+	$(INSTALL_CONF) ./files/gfwlist.htm $(1)/usr/lib/lua/luci/view/shadowsocks-libev/gfwlist.htm
+	$(INSTALL_CONF) ./files/watchdog.htm $(1)/usr/lib/lua/luci/view/shadowsocks-libev/watchdog.htm
+endef
+
 $(eval $(call BuildPackage,shadowsocks-libev))
 $(eval $(call BuildPackage,shadowsocks-libev-server))
+
+# gfwlist packages
+$(eval $(call BuildPackage,shadowsocks-libev-gfwlist))
