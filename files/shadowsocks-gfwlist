@@ -10,12 +10,12 @@ CONFIG=/etc/shadowsocks.json
 
 start() {
 	service_start /usr/bin/ss-redir -c $CONFIG -b 0.0.0.0 -l 1081
-  service_start /usr/bin/ss-local -c $CONFIG
+	service_start /usr/bin/ss-local -c $CONFIG
 	/usr/bin/ss-watchdog >> /var/log/shadowsocks_watchdog.log 2>&1 &
 }
 
 stop() {
 	kill -9 "`pidof ss-watchdog`"
 	service_stop /usr/bin/ss-local
-  service_stop /usr/bin/ss-redir
+	service_stop /usr/bin/ss-redir
 }
